@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Categorías</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <h1 class="text-center mb-4">Actualizar Categorías</h1>
+
+    <!-- Mensaje de Resultado -->
+    <div id="mensajeResultado" class="alert d-none"></div>
+
+    <!-- Formulario de Actualización -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h2 class="h4 mb-0">Editar Categoría</h2>
+        </div>
+        <div class="card-body">
+            <form id="actualizarForm">
+                <div class="mb-3">
+                    <label for="categoriaSeleccionada" class="form-label">Selecciona una Categoría</label>
+                    <select id="categoriaSeleccionada" class="form-select" required>
+                        <!-- Opciones dinámicas -->
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" id="nombre" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <textarea id="descripcion" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-check mb-3">
+                    <input type="checkbox" id="estado" class="form-check-input">
+                    <label for="estado" class="form-check-label">¿Está activa?</label>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                    <button type="button" class="btn btn-secondary" id="cancelarBtn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>document.addEventListener("DOMContentLoaded", () => {
+    const actualizarForm = document.getElementById("actualizarForm");
+    const categoriaSeleccionada = document.getElementById("categoriaSeleccionada");
+    const mensajeResultado = document.getElementById("mensajeResultado");
+
+    // Cargar todas las categorías para el selector
+    function cargarCategorias() {
+        fetch("http://localhost:8080/api/categorias/consultar")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Error al cargar las categorías.");
+                }
+                return response.json();
+            })
+            .then((categorias) => {
+                categoriaSeleccionada.innerHTML = ""; // Limpia las opciones anteriores
+                categorias.forEach((categoria) => {
+                    const opcion = document.createElement("option");
+                    opcion.value = categoria.id;
+                    opcion.textContent = `${categoria.nombre} (${categoria.status ? "Activa" : "Inactiva"})`;
+                    categoriaSeleccionada.appendChild(opcion);
+                });
+                // Si hay categorías, cargar la información de la primera categoría seleccionada
+                if (categorias.length > 0) {
+                    cargarDatosCategoria(categorias[0].id);
+                }
+            })
+            .catch((error) => {
+                mostrarMensaje("No se pudieron cargar las categorías.", "danger");
+                console.error("Error:", error);
+            });
+    }
+
+    // Cargar datos de una categoría específica por ID
+    function cargarDatosCategoria(id) {
+        fetch(`http://localhost:8080/api/categorias/editar/${id}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Error al obtener los datos de la categoría.");
+                }
+                return response.json();
+            })
+            .then((categoria) => {
+                // Llenar los campos del formulario con los datos de la categoría
+                document.getElementById("nombre").value = categoria.nombre;
+                document.getElementById("descripcion").value = categoria.descripcion;
+                document.getElementById("estado").checked = categoria.status;
+            })
+            .catch((error) => {
+                mostrarMensaje("Error al cargar los datos de la categoría seleccionada.", "danger");
+                console.error("Error:", error);
+            });
+    }
+
+    // Manejar el evento de cambio en el selector de categorías
+    categoriaSeleccionada.addEventListener("change", (event) => {
+        const id = event.target.value;
+        if (id) cargarDatosCategoria(id);
+    });
+
+    // Manejar la actualización de la categoría al enviar el formulario
+    actualizarForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const id = categoriaSeleccionada.value;
+        const datosActualizados = {
+            nombre: document.getElementById("nombre").value,
+            descripcion: document.getElementById("descripcion").value,
+            status: document.getElementById("estado").checked
+        };
+
+        fetch(`http://localhost:8080/api/categorias/editar/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datosActualizados)
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((error) => {
+                        throw new Error(error.mensaje || "Error desconocido al actualizar.");
+                    });
+                }
+                return response.json();
+            })
+            .then((categoriaActualizada) => {
+                mostrarMensaje("Categoría actualizada con éxito.", "success");
+                cargarCategorias(); // Recargar las categorías después de actualizar
+            })
+            .catch((error) => {
+                mostrarMensaje("Error al actualizar la categoría.", "danger");
+                console.error("Error:", error);
+            });
+    });
+
+    // Mostrar mensajes de éxito o error
+    function mostrarMensaje(mensaje, tipo) {
+        mensajeResultado.classList.remove("d-none", "alert-success", "alert-danger");
+        mensajeResultado.classList.add(`alert-${tipo}`);
+        mensajeResultado.textContent = mensaje;
+    }
+
+    // Botón de cancelar
+    document.getElementById("cancelarBtn").addEventListener("click", () => {
+        const id = categoriaSeleccionada.value;
+        if (id) cargarDatosCategoria(id); // Reinicia el formulario con los datos actuales
+    });
+
+    // Inicialización: cargar las categorías al cargar la página
+    cargarCategorias();
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

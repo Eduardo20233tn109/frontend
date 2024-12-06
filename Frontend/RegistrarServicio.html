@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Servicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h2 class="h5 mb-0">Registrar Servicio</h2>
+        </div>
+        <div class="card-body">
+            <form id="formRegistroServicio">
+                <div class="mb-3">
+                    <label for="nombre" class="form-label">Nombre del Servicio</label>
+                    <input type="text" id="nombre" class="form-control" placeholder="Ingrese el nombre del servicio" required>
+                </div>
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <textarea id="descripcion" class="form-control" placeholder="Ingrese la descripción del servicio" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="categoria" class="form-label">Categoría</label>
+                    <select id="categoria" class="form-select" required>
+                        <!-- Opciones dinámicas de categorías -->
+                    </select>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="status" class="form-check-input">
+                    <label for="status" class="form-check-label">Activo</label>
+                </div>
+                <button type="submit" class="btn btn-success">Registrar</button>
+            </form>
+            <div id="mensajeResultado" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const formRegistroServicio = document.getElementById("formRegistroServicio");
+    const categoriaSelect = document.getElementById("categoria");
+    const mensajeResultado = document.getElementById("mensajeResultado");
+
+    // Cargar categorías
+    fetch("http://localhost:8080/api/categorias/consultar")
+        .then(response => response.json())
+        .then(categorias => {
+            // Llenar el select con las categorías
+            categorias.forEach(categoria => {
+                const option = document.createElement("option");
+                option.value = categoria.id;
+                option.textContent = categoria.nombre;
+                categoriaSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            mensajeResultado.innerHTML = `<div class="alert alert-danger">Error al cargar las categorías.</div>`;
+            console.error("Error al cargar las categorías:", error);
+        });
+
+    // Manejar el envío del formulario
+    formRegistroServicio.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const data = {
+            nombre: document.getElementById("nombre").value,
+            descripcion: document.getElementById("descripcion").value,
+            status: document.getElementById("status").checked,
+            categoria: { id: parseInt(categoriaSelect.value) } // Enviar el id de la categoría seleccionada
+        };
+
+        fetch("http://localhost:8080/api/servicios/registrar", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Error al registrar el servicio.");
+                return response.json();
+            })
+            .then(data => {
+                mensajeResultado.innerHTML = `<div class="alert alert-success">Servicio registrado con éxito.</div>`;
+                formRegistroServicio.reset(); // Limpiar el formulario
+            })
+            .catch(error => {
+                mensajeResultado.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            });
+    });
+});
+</script>
+</body>
+</html>
