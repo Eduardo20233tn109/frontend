@@ -30,13 +30,7 @@
                         <!-- Opciones dinámicas -->
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="usuario" class="form-label">Usuario</label>
-                    <select class="form-select" id="usuario" required>
-                        <option value="" selected disabled>Seleccione un usuario</option>
-                        <!-- Opciones dinámicas -->
-                    </select>
-                </div>
+        
                 <div class="form-check mb-3">
                     <input type="checkbox" class="form-check-input" id="estado" checked>
                     <label class="form-check-label" for="estado">Activo</label>
@@ -47,11 +41,37 @@
         </div>
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const registroReservacionForm = document.getElementById("registroReservacionForm");
+        const servicioSelect = document.getElementById("servicio");
         const mensajeResultado = document.getElementById("mensajeResultado");
+
+        // Cargar servicios disponibles
+        function cargarServicios() {
+            fetch("http://localhost:8080/api/servicios/consultar")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Error al cargar los servicios.");
+                    }
+                    return response.json();
+                })
+                .then(servicios => {
+                    servicioSelect.innerHTML = '<option value="" selected disabled>Seleccione un servicio</option>';
+                    servicios.forEach(servicio => {
+                        const option = document.createElement("option");
+                        option.value = servicio.id;
+                        option.textContent = servicio.nombre;
+                        servicioSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error al cargar los servicios:", error);
+                    mensajeResultado.className = "alert alert-danger";
+                    mensajeResultado.textContent = "Error al cargar los servicios.";
+                    mensajeResultado.classList.remove("d-none");
+                });
+        }
 
         // Función para registrar reservación
         registroReservacionForm.addEventListener("submit", (event) => {
@@ -59,8 +79,7 @@
             const data = {
                 nombre: document.getElementById("nombre").value,
                 descripcion: document.getElementById("descripcion").value,
-                servicio: { id: document.getElementById("servicio").value },
-                usuario: { id: document.getElementById("usuario").value },
+                servicio: { id: parseInt(servicioSelect.value) },
                 status: document.getElementById("estado").checked
             };
 
@@ -69,21 +88,32 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Error al registrar la reservación.");
+                    }
+                    return response.json();
+                })
                 .then(reservacion => {
                     mensajeResultado.className = "alert alert-success";
                     mensajeResultado.textContent = "Reservación registrada con éxito.";
                     mensajeResultado.classList.remove("d-none");
                     registroReservacionForm.reset();
+                    cargarServicios(); // Refresca los servicios si es necesario
                 })
                 .catch(error => {
+                    console.error("Error al registrar la reservación:", error);
                     mensajeResultado.className = "alert alert-danger";
                     mensajeResultado.textContent = "Error al registrar la reservación.";
                     mensajeResultado.classList.remove("d-none");
                 });
         });
+
+        // Inicialización
+        cargarServicios();
     });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
