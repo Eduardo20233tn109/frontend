@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actualizar Servicios</title>
+    <title>Actualizar Reservaciones</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <div class="container py-5">
-    <h1 class="text-center mb-4">Actualizar Servicios</h1>
+    <h1 class="text-center mb-4">Actualizar Reservaciones</h1>
 
     <!-- Mensaje de Resultado -->
     <div id="mensajeResultado" class="alert d-none"></div>
 
     <!-- Formulario de Actualización -->
     <div class="card shadow-sm">
-        <div class="card-header bg-warning text-dark">
-            <h2 class="h4 mb-0">Editar Servicio</h2>
+        <div class="card-header bg-info text-white">
+            <h2 class="h4 mb-0">Editar Reservación</h2>
         </div>
         <div class="card-body">
             <form id="actualizarForm">
                 <div class="mb-3">
-                    <label for="servicioSeleccionado" class="form-label">Selecciona un Servicio</label>
-                    <select id="servicioSeleccionado" class="form-select" required>
+                    <label for="reservacionSeleccionada" class="form-label">Selecciona una Reservación</label>
+                    <select id="reservacionSeleccionada" class="form-select" required>
                         <!-- Opciones dinámicas -->
                     </select>
                 </div>
@@ -35,15 +35,14 @@
                     <textarea id="descripcion" class="form-control" rows="3" required></textarea>
                 </div>
                 <div class="mb-3">
-                    <label for="categoriaSeleccionada" class="form-label">Selecciona una Categoría</label>
-                    <select id="categoriaSeleccionada" class="form-select" required>
-                        <!-- Opciones dinámicas de categorías -->
+                    <label for="servicioSeleccionado" class="form-label">Servicio Asociado</label>
+                    <select id="servicioSeleccionado" class="form-select" required>
+                        <!-- Opciones dinámicas de servicios -->
                     </select>
                 </div>
-                
                 <div class="form-check mb-3">
                     <input type="checkbox" id="estado" class="form-check-input">
-                    <label for="estado" class="form-check-label">¿Está activo?</label>
+                    <label for="estado" class="form-check-label">¿Está activa?</label>
                 </div>
                 <div class="d-flex justify-content-between">
                     <button type="submit" class="btn btn-primary">Actualizar</button>
@@ -55,11 +54,38 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
     const actualizarForm = document.getElementById("actualizarForm");
+    const reservacionSeleccionada = document.getElementById("reservacionSeleccionada");
     const servicioSeleccionado = document.getElementById("servicioSeleccionado");
-    const categoriaSeleccionada = document.getElementById("categoriaSeleccionada");
     const mensajeResultado = document.getElementById("mensajeResultado");
+
+    // Cargar todas las reservaciones para el selector
+    function cargarReservaciones() {
+        fetch("http://localhost:8080/api/reservaciones/consultar")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Error al cargar las reservaciones.");
+                }
+                return response.json();
+            })
+            .then((reservaciones) => {
+                reservacionSeleccionada.innerHTML = ""; // Limpia las opciones anteriores
+                reservaciones.forEach((reservacion) => {
+                    const opcion = document.createElement("option");
+                    opcion.value = reservacion.id;
+                    opcion.textContent = `${reservacion.nombre} (${reservacion.status ? "Activa" : "Inactiva"})`;
+                    reservacionSeleccionada.appendChild(opcion);
+                });
+                if (reservaciones.length > 0) {
+                    cargarDatosReservacion(reservaciones[0].id);
+                }
+            })
+            .catch((error) => {
+                mostrarMensaje("No se pudieron cargar las reservaciones.", "danger");
+                console.error("Error:", error);
+            });
+    }
 
     // Cargar todos los servicios para el selector
     function cargarServicios() {
@@ -78,9 +104,6 @@
                     opcion.textContent = `${servicio.nombre} (${servicio.status ? "Activo" : "Inactivo"})`;
                     servicioSeleccionado.appendChild(opcion);
                 });
-                if (servicios.length > 0) {
-                    cargarDatosServicio(servicios[0].id);
-                }
             })
             .catch((error) => {
                 mostrarMensaje("No se pudieron cargar los servicios.", "danger");
@@ -88,64 +111,46 @@
             });
     }
 
-    // Cargar todas las categorías para el selector
-    function cargarCategorias() {
-        fetch("http://localhost:8080/api/categorias/consultar")
+    // Cargar datos de una reservación específica por ID
+    function cargarDatosReservacion(id) {
+        fetch(`http://localhost:8080/api/reservaciones/${id}`)
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error("Error al cargar las categorías.");
+                    throw new Error("Error al obtener los datos de la reservación.");
                 }
                 return response.json();
             })
-            .then((categorias) => {
-                categoriaSeleccionada.innerHTML = ""; // Limpia las opciones anteriores
-                categorias.forEach((categoria) => {
-                    const opcion = document.createElement("option");
-                    opcion.value = categoria.id;
-                    opcion.textContent = `${categoria.nombre} (${categoria.status ? "Activa" : "Inactiva"})`;
-                    categoriaSeleccionada.appendChild(opcion);
-                });
+            .then((reservacion) => {
+                document.getElementById("nombre").value = reservacion.nombre;
+                document.getElementById("descripcion").value = reservacion.descripcion;
+                document.getElementById("estado").checked = reservacion.status;
+                servicioSeleccionado.value = reservacion.servicio?.id || "";
             })
             .catch((error) => {
-                mostrarMensaje("No se pudieron cargar las categorías.", "danger");
+                mostrarMensaje("Error al cargar los datos de la reservación seleccionada.", "danger");
                 console.error("Error:", error);
             });
     }
 
-    // Cargar datos de un servicio específico por ID
-    function cargarDatosServicio(id) {
-        fetch(`http://localhost:8080/api/servicios/${id}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Error al obtener los datos del servicio.");
-                }
-                return response.json();
-            })
-            .then((servicio) => {
-                document.getElementById("nombre").value = servicio.nombre;
-                document.getElementById("descripcion").value = servicio.descripcion;
-                document.getElementById("estado").checked = servicio.status;
-                categoriaSeleccionada.value = servicio.categoria?.id || "";
-            })
-            .catch((error) => {
-                mostrarMensaje("Error al cargar los datos del servicio seleccionado.", "danger");
-                console.error("Error:", error);
-            });
-    }
+    // Manejar el evento de cambio en el selector de reservaciones
+    reservacionSeleccionada.addEventListener("change", (event) => {
+        const id = event.target.value;
+        if (id) cargarDatosReservacion(id);
+    });
 
-    // Manejar la actualización del servicio al enviar el formulario
+    // Manejar la actualización de la reservación al enviar el formulario
     actualizarForm.addEventListener("submit", (event) => {
         event.preventDefault();
 
-        const id = servicioSeleccionado.value;
+        const id = reservacionSeleccionada.value;
         const datosActualizados = {
             nombre: document.getElementById("nombre").value,
             descripcion: document.getElementById("descripcion").value,
             status: document.getElementById("estado").checked,
-            categoria: { id: categoriaSeleccionada.value } // Nueva categoría seleccionada
+            servicio: { id: servicioSeleccionado.value } // Nueva categoría seleccionada
         };
 
-        fetch(`http://localhost:8080/api/servicios/${id}`, {
+        fetch(`http://localhost:8080/api/reservaciones/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
@@ -160,16 +165,17 @@
                 }
                 return response.json();
             })
-            .then((servicioActualizado) => {
-                mostrarMensaje("Servicio actualizado con éxito.", "success");
-                cargarServicios();
+            .then((reservacionActualizada) => {
+                mostrarMensaje("Reservación actualizada con éxito.", "success");
+                cargarReservaciones();
             })
             .catch((error) => {
-                mostrarMensaje("Error al actualizar el servicio.", "danger");
+                mostrarMensaje("Error al actualizar la reservación.", "danger");
                 console.error("Error:", error);
             });
     });
 
+    // Mostrar mensajes de éxito o error
     function mostrarMensaje(mensaje, tipo) {
         mensajeResultado.classList.remove("d-none", "alert-success", "alert-danger");
         mensajeResultado.classList.add(`alert-${tipo}`);
@@ -177,13 +183,13 @@
     }
 
     document.getElementById("cancelarBtn").addEventListener("click", () => {
-        const id = servicioSeleccionado.value;
-        if (id) cargarDatosServicio(id);
+        const id = reservacionSeleccionada.value;
+        if (id) cargarDatosReservacion(id);
     });
 
     // Inicialización
+    cargarReservaciones();
     cargarServicios();
-    cargarCategorias();
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
