@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servicios Disponibles</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="Usuarios.html">Sistema de Reservaciones</a>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="btn btn-outline-danger" href="#">Cerrar Sesión</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <h2 class="mb-4 text-center">Servicios Disponibles</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4" id="serviciosList">
+      <!-- Los servicios se cargarán dinámicamente aquí -->
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const serviciosList = document.getElementById("serviciosList");
+
+      // Cargar los servicios desde la API
+      function cargarServicios() {
+        fetch("http://localhost:8080/api/servicios/consultar")  // Cambia esta URL con tu API de servicios
+          .then(response => response.json())
+          .then(servicios => {
+            // Limpiar los servicios previos
+            serviciosList.innerHTML = "";
+
+            // Crear las tarjetas de servicios
+            servicios.forEach(servicio => {
+              const card = document.createElement("div");
+              card.classList.add("col");
+
+              card.innerHTML = `
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h5 class="card-title">${servicio.nombre}</h5>
+                    <p class="card-text">${servicio.descripcion}</p>
+                    <p class="card-text"><small class="text-muted">Categoría: ${servicio.categoria.nombre}</small></p>
+                  </div>
+                </div>
+              `;
+              serviciosList.appendChild(card);
+            });
+          })
+          .catch(error => console.error("Error al cargar los servicios:", error));
+      }
+
+      // Inicializar los servicios
+      cargarServicios();
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

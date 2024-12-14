@@ -114,7 +114,7 @@
 
     // Cargar datos de un servicio específico por ID
     function cargarDatosServicio(id) {
-        fetch(`http://localhost:8080/api/servicios/${id}`)
+        fetch(`http://localhost:8080/api/servicios/editar/${id}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Error al obtener los datos del servicio.");
@@ -145,7 +145,7 @@
             categoria: { id: categoriaSeleccionada.value } // Nueva categoría seleccionada
         };
 
-        fetch(`http://localhost:8080/api/servicios/${id}`, {
+        fetch(`http://localhost:8080/api/servicios/editar/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
